@@ -5,17 +5,32 @@ InitializeParameters <- function()
     Param.Width <<- 150
     Param.dt <<- 0.1
 
-    Param.DangerZone <<- 1
-    Param.BatRangeDist <<- 15
-    Param.BatRangeAngle <<- 150
-    Param.MothRange <<- 100
-    
     Param.NumOfBats <<- 3
     Param.VelBat <<- 10 
     Param.VelBatSD <<- 2
     Param.NumOfMoths <<- 10
     Param.VelMoth <<- 5
     Param.VelMothSD <<- 1
+
+    Param.DangerZone <<- 1
+    
+    Param.BatRangeDist <<- 15
+    Param.BatRangeAngle <<- 150
+    Param.MothRange <<- 100
+    Param.StartleRange <<- 50
+    Param.LearnTime <<- 3
+}
+
+InitializeDataFrames <- function()
+{
+    DF.Animals <<- data.frame(matrix(ncol = 7, nrow = 0))
+    colnames(DF.Animals) <<- c('Animal', 'ID', 'X', 'Y', 'Angle', 'Velocity', 'NumStartled', 'LastStartled')
+    
+    DF.LunchTime <<- data.frame(matrix(ncol = 3, nrow = 0))
+    colnames(DF.LunchTime) <<- c('MothID', 'BatID', 'EatenAt')
+    
+    DF.Trace <<- data.frame(matrix(ncol = 5, nrow = 0))
+    colnames(DF.Trace) <<- c('Animal', 'ID', 'Time', 'X', 'Y')
 }
 
 InitializeAnimals <- function(num, meanVel, sdVel, bm)
@@ -24,69 +39,108 @@ InitializeAnimals <- function(num, meanVel, sdVel, bm)
     x <- runif(num, 1, Param.Width)
     angle <- runif(num,0, 360)
     vel <- rnorm(num, meanVel, sdVel)
-    df_animals <<- rbind(df_animals, (as.data.frame(list(bm=rep(bm, num), seq=(1:num), x = x, y = y, angle = angle, vel = vel))))
+    DF.Animals <<- rbind(DF.Animals, (as.data.frame(list(Animal=rep(bm, num), ID=(1:num), X = x, Y = y, Angle = angle, Velocity = vel, NumStartled = 0, LastStartled = NA))))
 }
 
 
 BatCatchesMoth <- function(batseq, mothseq, t)
 {
-    df_lunchtime <<-  rbind(df_lunchtime, (as.data.frame(list(moth_seq=mothseq, bat_seq=batseq, eaten_at = t))))
+    DF.LunchTime <<-  rbind(DF.LunchTime, (as.data.frame(list(MothID=mothseq, BatID=batseq, EatenAt = t))))
     
-    df_animals[df_animals$bm=='Moth' & df_animals$seq == mothseq, "x"] <<- - Param.Width
-    df_animals[df_animals$bm=='Moth' & df_animals$seq == mothseq, "y"] <<- - Param.Height
-    df_animals[df_animals$bm=='Moth' & df_animals$seq == mothseq, "vel"] <<- 0
+    DF.Animals[DF.Animals$Animal == 'Moth' & DF.Animals$ID == mothseq, "X"] <<- - Param.Width
+    DF.Animals[DF.Animals$Animal == 'Moth' & DF.Animals$ID == mothseq, "Y"] <<- - Param.Height
+    DF.Animals[DF.Animals$Animal == 'Moth' & DF.Animals$ID == mothseq, "Velocity"] <<- 0
 }
 
 
 TimeIncr <- function(t)
 {
-    for (i in (1:nrow(df_animals)))
+    for (i in (1:nrow(DF.Animals)))
     {
-        if (df_animals$vel[i] > 0)
+        if (DF.Animals$Velocity[i] > 0)
         {
-            ns <- NextStep(df_animals$x[i], df_animals$y[i], df_animals$angle[i], df_animals$vel[i], Param.dt)
-            df_animals$x[i] <<- ns[1]
-            df_animals$y[i] <<- ns[2]
-            df_animals$angle[i] <<- ns[3]
-            trace_df <<- rbind(trace_df, as.data.frame(list(bm=df_animals$bm[i], seq=df_animals$seq[i], t = t, x = ns[1], y = ns[2])))
+            ns <- NextStep(DF.Animals$X[i], DF.Animals$Y[i], DF.Animals$Angle[i], DF.Animals$Velocity[i], Param.dt)
+            DF.Animals$X[i] <<- ns[1]
+            DF.Animals$Y[i] <<- ns[2]
+            DF.Animals$Angle[i] <<- ns[3]
+            DF.Trace <<- rbind(DF.Trace, as.data.frame(list(Animal = DF.Animals$Animal[i], ID=DF.Animals$ID[i], Time = t, X = ns[1], Y = ns[2])))
         }
-        else
+        else if (DF.Animals$Animal[i] == 'Moth') # Valeocity of eaten moths are set to 0
         {
-            seq <- df_animals$seq[i]
-            masterseq <- df_lunchtime[df_lunchtime$moth_seq == seq, 'bat_seq']
-            masterpos <- df_animals[df_animals$bm == 'Bat' & df_animals$seq == masterseq,]
-            trace_df <<- rbind(trace_df, as.data.frame(list(bm=df_animals$bm[i], seq=df_animals$seq[i], t = t, x = masterpos$x, y = masterpos$y))) #, angle = masterpos$angle , vel = masterpos$vel))
+            ID <- DF.Animals$ID[i]
+            masterseq <- DF.LunchTime[DF.LunchTime$MothID == ID, 'BatID']
+            masterpos <- DF.Animals[DF.Animals$Animal == 'Bat' & DF.Animals$ID == masterseq,]
+            DF.Trace <<- rbind(DF.Trace, as.data.frame(list(Animal = DF.Animals$Animal[i], ID=DF.Animals$ID[i], Time = t, X = masterpos$X, Y = masterpos$Y))) 
+        }
+        else # Bat with velocity = 0 means it is startled
+        {
+            ****************            
         }
     }
-    moth_df <- df_animals[df_animals$bm == 'Moth', ]
-    bat_df <- df_animals[df_animals$bm == 'Bat',]
+    moth_df <- DF.Animals[DF.Animals$Animal == 'Moth', ]
+    bat_df <- DF.Animals[DF.Animals$Animal == 'Bat',]
     for (i in (1:nrow(moth_df)))
     {
-        mothx <-  moth_df$x[i]
-        mothy <-  moth_df$y[i]
-        mothseq <- moth_df$seq[i]
+        mothx <-  moth_df$X[i]
+        mothy <-  moth_df$Y[i]
+        mothseq <- moth_df$ID[i]
         for (j in (1:nrow(bat_df)))
         {
-            batx <-  bat_df$x[j]
-            baty <-  bat_df$y[j]
-            batseq <- bat_df$seq[j]
-            batangle <- bat_df$angle[j]
+            batx <-  bat_df$X[j]
+            baty <-  bat_df$Y[j]
+            batseq <- bat_df$ID[j]
+            batangle <- bat_df$Angle[j]
+
+            dist <- CalcDist(mothx, mothy, batx, baty)
             moth_detected <- WithinRange(batx, baty, mothx, mothy, Param.BatRangeDist, batangle, Param.BatRangeAngle)
             if (moth_detected) # bat detects moths, turns towards
             {
-                alpha <- calcAngle(batx, baty, mothx, mothy)
-                df_animals[df_animals$bm=='Bat' & df_animals$seq == batseq, "angle"] <<- alpha
+                alpha <- CalcAngle(batx, baty, mothx, mothy)
+                DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "Angle"] <<- alpha
             }
-            dist <- dist(mothx, mothy, batx, baty)
             if (dist <= Param.DangerZone) # moth gets eaten
             {
-                BatCatchesMoth (bat_df$seq[j], mothseq, t) 
+                BatCatchesMoth (bat_df$ID[j], mothseq, t) 
             }
             else if (dist < Param.MothRange) # moth detects bat, turns back
             {
-                alpha <- calcAngle(batx, baty, mothx, mothy)
-                df_animals[df_animals$bm=='Moth' & df_animals$seq == mothseq, "angle"] <<- alpha
+                alpha <- CalcAngle(batx, baty, mothx, mothy)
+                DF.Animals[DF.Animals$Animal =='Moth' & DF.Animals$ID == mothseq, "Angle"] <<- alpha
             }
         }  
     }
+}
+
+Simulate <- function()
+{
+    InitializeDataFrames()
+    InitializeAnimals(Param.NumOfBats, Param.VelBat, Param.VelBatSD, 'Bat')
+    InitializeAnimals(Param.NumOfMoths, Param.VelMoth, Param.VelMothSD, 'Moth')
+    
+    timerange <- (Param.Height**2 + Param.Width**2)^0.5 / Param.VelMoth * 2
+    stats <- c('Victim' = 0, 'Prey' = 0, 'HuntTime' = 0)
+    for (i in seq(1, timerange, Param.dt))
+    {
+        TimeIncr(i)
+    }
+    stats["Victim"] <- nrow(DF.LunchTime) / Param.NumOfMoths
+    stats["Prey"] <- nrow(DF.LunchTime) / Param.NumOfBats
+    stats["HuntTime"] <- mean(DF.LunchTime$EatenAt) / timerange
+    return (stats)
+}
+
+
+Animate <- function(fileName = NULL)
+{
+    p <- ggplot(DF.Trace, aes(X, Y, frame = Time)) +
+        xlim(0, Param.Width) + ylim(0, Param.Height) + theme_bw() +
+        geom_point(aes(size = Animal, shape = Animal, color = Animal, frame = Time, ids = paste(Animal, ID))) +
+        scale_size_manual(values=c(5, 2)) +
+        scale_shape_manual(values=c(11, 5)) +
+        scale_color_manual(values=c("black", "navajowhite4"))
+    
+    pp <- ggplotly(p) %>% animation_opts(frame = 250, easing = "linear", redraw = FALSE)
+    pp
+    if (! is.null(fileName))
+        saveWidget(pp, file = paste('Output/',fileName), selfcontained = TRUE)
 }

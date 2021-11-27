@@ -42,13 +42,13 @@ NextStep <- function(x, y, angle, vel, dt)
 }
 
 # Calculate the Euler distance between two points
-dist <- function(x1, y1, x2, y2)
+CalcDist <- function(x1, y1, x2, y2)
 {
     return (sqrt((x1-x2)^2 + (y1-y2)^2))
 }
 
 # Calculate the angle to go from point 1 (x1, y1) to point 2 (x2, y2)
-calcAngle <- function(x1, y1, x2, y2)
+CalcAngle <- function(x1, y1, x2, y2)
 {
     if (x1 == x2)
     {
@@ -67,9 +67,9 @@ calcAngle <- function(x1, y1, x2, y2)
 # point 1 has the direction of alpha, and swiping range of beta from the central axis of direction
 WithinRange <- function(x1, y1, x2, y2, range, alpha, beta)
 {
-    if (dist(x1, y1, x2, y2) > range)
+    if (CalcDist(x1, y1, x2, y2) > range)
         return(FALSE)
-    gamma <- calcAngle(x1, y1, x2, y2)
+    gamma <- CalcAngle(x1, y1, x2, y2)
     diff <- abs(gamma - alpha)
     if (diff > 180) diff <- diff - 180
     return (diff <= beta/2)
