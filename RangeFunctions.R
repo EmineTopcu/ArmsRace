@@ -1,3 +1,4 @@
+
 # Calculates the next position of the animal based on the current position and velocity
 # If the border of the area is reached, it turns back at a random angle
 NextStep <- function(x, y, angle, vel, dt)

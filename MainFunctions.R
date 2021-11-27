@@ -1,47 +1,4 @@
 
-InitializeParameters <- function()
-{
-    Param.Height <<- 150
-    Param.Width <<- 150
-    Param.dt <<- 0.1
-
-    Param.NumOfBats <<- 3
-    Param.VelBat <<- 10 
-    Param.VelBatSD <<- 2
-    Param.NumOfMoths <<- 10
-    Param.VelMoth <<- 5
-    Param.VelMothSD <<- 1
-
-    Param.DangerZone <<- 1
-    
-    Param.BatRangeDist <<- 15
-    Param.BatRangeAngle <<- 150
-    Param.MothRange <<- 100
-    Param.StartleRange <<- 50
-    Param.LearnTime <<- 3
-}
-
-InitializeDataFrames <- function()
-{
-    DF.Animals <<- data.frame(matrix(ncol = 7, nrow = 0))
-    colnames(DF.Animals) <<- c('Animal', 'ID', 'X', 'Y', 'Angle', 'Velocity', 'NumStartled', 'LastStartled')
-    
-    DF.LunchTime <<- data.frame(matrix(ncol = 3, nrow = 0))
-    colnames(DF.LunchTime) <<- c('MothID', 'BatID', 'EatenAt')
-    
-    DF.Trace <<- data.frame(matrix(ncol = 5, nrow = 0))
-    colnames(DF.Trace) <<- c('Animal', 'ID', 'Time', 'X', 'Y')
-}
-
-InitializeAnimals <- function(num, meanVel, sdVel, bm)
-{
-    y <- runif(num, 1, Param.Height)
-    x <- runif(num, 1, Param.Width)
-    angle <- runif(num,0, 360)
-    vel <- rnorm(num, meanVel, sdVel)
-    DF.Animals <<- rbind(DF.Animals, (as.data.frame(list(Animal=rep(bm, num), ID=(1:num), X = x, Y = y, Angle = angle, Velocity = vel, NumStartled = 0, LastStartled = NA))))
-}
-
 
 BatCatchesMoth <- function(batseq, mothseq, t)
 {
@@ -52,6 +9,19 @@ BatCatchesMoth <- function(batseq, mothseq, t)
     DF.Animals[DF.Animals$Animal == 'Moth' & DF.Animals$ID == mothseq, "Velocity"] <<- 0
 }
 
+MothStartlesBat <- function(batseq, t)
+{
+    DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "Velocity"] <<- 0
+    DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "LastStartled"] <<- t
+    numstartled <- DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "NumStartled"]
+    DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "NumStartled"] <<- numstartled + 1
+}
+
+BatRecoversFromStartle <- function(batseq, t)
+{
+    DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "Velocity"] <<- rnorm(1, Param.VelBat, Param.VelBatSD)
+    DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "LastStartled"] <<- 0
+}
 
 TimeIncr <- function(t)
 {
@@ -70,11 +40,14 @@ TimeIncr <- function(t)
             ID <- DF.Animals$ID[i]
             masterseq <- DF.LunchTime[DF.LunchTime$MothID == ID, 'BatID']
             masterpos <- DF.Animals[DF.Animals$Animal == 'Bat' & DF.Animals$ID == masterseq,]
-            DF.Trace <<- rbind(DF.Trace, as.data.frame(list(Animal = DF.Animals$Animal[i], ID=DF.Animals$ID[i], Time = t, X = masterpos$X, Y = masterpos$Y))) 
+            DF.Trace <<- rbind(DF.Trace, as.data.frame(list(Animal = DF.Animals$Animal[i], ID = DF.Animals$ID[i], Time = t, X = masterpos$X, Y = masterpos$Y))) 
         }
         else # Bat with velocity = 0 means it is startled
         {
-            ****************            
+            DF.Animals$X[i] <<- rnorm(1, DF.Animals$X[i], 0.1)
+            DF.Animals$Y[i] <<- rnorm(1, DF.Animals$Y[i], 0.1)
+            DF.Animals$Angle[i] <<- rnorm(1, DF.Animals$Angle[i], 1)
+            DF.Trace <<- rbind(DF.Trace, as.data.frame(list(Animal = DF.Animals$Animal[i], ID=DF.Animals$ID[i], Time = t, X = DF.Animals$X[i], Y = DF.Animals$Y[i])))
         }
     }
     moth_df <- DF.Animals[DF.Animals$Animal == 'Moth', ]
@@ -90,14 +63,30 @@ TimeIncr <- function(t)
             baty <-  bat_df$Y[j]
             batseq <- bat_df$ID[j]
             batangle <- bat_df$Angle[j]
-
+            batlaststartled <- bat_df$LastStartled[j]
+            batnumstartled <- bat_df$NumStartled[j]
+            
             dist <- CalcDist(mothx, mothy, batx, baty)
             moth_detected <- WithinRange(batx, baty, mothx, mothy, Param.BatRangeDist, batangle, Param.BatRangeAngle)
-            if (moth_detected) # bat detects moths, turns towards
+            if (batlaststartled > 0)
+            { 
+                if ((t - batlaststartled) >= Param.RecoveryTime)
+                {
+                    BatRecoversFromStartle(batseq, t)
+                    batstartled <- 0
+                }
+            }
+            else if (dist < Param.StartleRange & batnumstartled <= Param.LearnTime)
+            {
+                batlaststartled <- t
+                MothStartlesBat(batseq, t)
+            }
+            if (batlaststartled == 0 & moth_detected) # bat detects moths, turns towards
             {
                 alpha <- CalcAngle(batx, baty, mothx, mothy)
                 DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "Angle"] <<- alpha
             }
+            
             if (dist <= Param.DangerZone) # moth gets eaten
             {
                 BatCatchesMoth (bat_df$ID[j], mothseq, t) 
@@ -132,6 +121,7 @@ Simulate <- function()
 
 Animate <- function(fileName = NULL)
 {
+    fileName <- gsub(" ", "", paste('Output/',fileName))
     p <- ggplot(DF.Trace, aes(X, Y, frame = Time)) +
         xlim(0, Param.Width) + ylim(0, Param.Height) + theme_bw() +
         geom_point(aes(size = Animal, shape = Animal, color = Animal, frame = Time, ids = paste(Animal, ID))) +
@@ -142,5 +132,5 @@ Animate <- function(fileName = NULL)
     pp <- ggplotly(p) %>% animation_opts(frame = 250, easing = "linear", redraw = FALSE)
     pp
     if (! is.null(fileName))
-        saveWidget(pp, file = paste('Output/',fileName), selfcontained = TRUE)
+        saveWidget(pp, file = fileName, selfcontained = TRUE)
 }

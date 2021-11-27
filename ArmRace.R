@@ -4,61 +4,7 @@ library(plotly)
 
 source("RangeFunctions.R")
 source("MainFunctions.R")
-
-
-
-InitializeRandomHunt <- function()
-{
-    Param.MothRange <<- 0 # moth cannot detect bats
-    Param.BatRangeDist <<- 0 # bat cannot detect moths
-    Param.StartleRange <<- 0
-    Param.LearnTime <<- 999
-}
-
-InitializeBatDetectRange <- function(rng)
-{
-    Param.BatRangeDist <<- rng
-    Param.BatRangeAngle <<- 90
-    Param.MothRange <<- 100
-    Param.StartleRange <<- 0
-    Param.LearnTime <<- 999
-}
-
-InitializeBatDetectAngle <- function(rng)
-{
-    Param.BatRangeDist <<- 15
-    Param.BatRangeAngle <<- rng
-    Param.MothRange <<- 0 # moth cannot detect bats
-    Param.StartleRange <<- 0
-    Param.LearnTime <<- 999
-}
-
-InitializeMothDetectRange <- function(rng)
-{
-    Param.BatRangeDist <<- 15
-    Param.BatRangeAngle <<- 150
-    Param.MothRange <<- rng
-    Param.StartleRange <<- 0
-    Param.LearnTime <<- 999
-}
-
-InitializeStartleRange <- function(rng)
-{
-    Param.BatRangeDist <<- 15
-    Param.BatRangeAngle <<- 150
-    Param.MothRange <<- 100
-    Param.StartleRange <<- rng
-    Param.LearnTime <<- 999
-}
-
-InitializeStartleLearning <- function(lrn)
-{
-    Param.BatRangeDist <<- 15
-    Param.BatRangeAngle <<- 150
-    Param.MothRange <<- 100
-    Param.StartleRange <<- 50
-    Param.LearnTime <<- lrn
-}
+source("Initialize.R")
 
 
 RunModel <- function (mode, numOfRuns, variable)
@@ -73,7 +19,7 @@ RunModel <- function (mode, numOfRuns, variable)
 
 Main <- function()
 {
-    numOfRuns <- 2
+    numOfRuns <- 100
     InitializeParameters()
     
     DF.Stats <<-  data.frame(matrix(ncol = 6, nrow = 0))
@@ -82,27 +28,31 @@ Main <- function()
     InitializeRandomHunt()
     RunModel("RandomHunt", numOfRuns, 0)
     Animate("RandomHunt.html") # plot the last one
+    write.csv(DF.Stats, "Output/StatsRandom.csv") #*****************
 
-    for (rng in (5:6))
+    for (rng in seq(5, 15, 2))
     {
         InitializeBatDetectRange(rng)
         RunModel("BatRangeDistance", numOfRuns, rng)
         Animate(paste("BatRangeDistance", rng, ".html")) # plot the last one
     }
+    write.csv(DF.Stats, "Output/StatsBatRange.csv") #*****************
 
-    for (ang in seq(90, 100, 10))
+    for (ang in seq(90, 150, 10))
     {
         InitializeBatDetectAngle(ang)
         RunModel("BatRangeAngle", numOfRuns, ang)
         Animate(paste("BatRangeAngle", ang, ".html")) # plot the last one
     }
+    write.csv(DF.Stats, "Output/StatsBatAngle.csv")#*****************
     
-    for (rng in seq(90, 100, 10))
+    for (rng in seq(50, 100, 10))
     {
         InitializeMothDetectRange(rng)
         RunModel("MothRangeDistance", numOfRuns, rng)
         Animate(paste("MothRangeDistance", rng, ".html")) # plot the last one
     }
+    write.csv(DF.Stats, "Output/StatsMothRange.csv")#*****************
     
     for (rng in seq(10, 50, 10))
     {
@@ -110,6 +60,7 @@ Main <- function()
         RunModel("StartleRange", numOfRuns, rng)
         Animate(paste("StartleRange", rng, ".html")) # plot the last one
     }
+    write.csv(DF.Stats, "Output/StatsStartle.csv")#*****************
     
     for (lrn in (1:5))
     {
@@ -117,7 +68,7 @@ Main <- function()
         RunModel("StartleLearning", numOfRuns, lrn)
         Animate(paste("StartleLearning", lrn, ".html")) # plot the last one
     }
-    
+
     write.csv(DF.Stats, "Output/Stats.csv")
     
     #if (plotResults)
@@ -129,5 +80,17 @@ Main <- function()
     #return (stats)
 }
 
+NormalRun <- function()
+{
+    InitializeParameters()
+    
+    DF.Stats <<-  data.frame(matrix(ncol = 6, nrow = 0))
+    colnames(DF.Stats) <- c('Mode', 'Variable', 'Seq', 'Victim', 'Prey', 'HuntTime')
+    
+    RunModel("NormalRun", 1, 0)
+    Animate("NormalRun.html") # plot the last one
+    
+}
 Main()
 
+#NormalRun()
