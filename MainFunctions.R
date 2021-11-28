@@ -9,10 +9,11 @@ BatCatchesMoth <- function(batseq, mothseq, t)
     DF.Animals[DF.Animals$Animal == 'Moth' & DF.Animals$ID == mothseq, "Velocity"] <<- 0
 }
 
-MothStartlesBat <- function(batseq, t)
+MothStartlesBat <- function(mothseq, batseq, t)
 {
     DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "Velocity"] <<- 0
     DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "LastStartled"] <<- t
+    DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "LastStartledBy"] <<- mothseq
     numstartled <- DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "NumStartled"]
     DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "NumStartled"] <<- numstartled + 1
 }
@@ -64,11 +65,11 @@ TimeIncr <- function(t)
             batseq <- bat_df$ID[j]
             batangle <- bat_df$Angle[j]
             batlaststartled <- bat_df$LastStartled[j]
+            batlaststartledby <- bat_df$LastStartledBy[j]
             batnumstartled <- bat_df$NumStartled[j]
-            
             dist <- CalcDist(mothx, mothy, batx, baty)
             moth_detected <- WithinRange(batx, baty, mothx, mothy, Param.BatRangeDist, batangle, Param.BatRangeAngle)
-            if (batlaststartled > 0)
+            if (batlaststartledby == mothseq & batlaststartled > 0)
             { 
                 if ((t - batlaststartled) >= Param.RecoveryTime)
                 {
@@ -76,11 +77,21 @@ TimeIncr <- function(t)
                     batstartled <- 0
                 }
             }
-            else if (dist < Param.StartleRange & batnumstartled <= Param.LearnTime)
+            # if bat is within the moth's startle range, 
+            # and has not reached the learning number of startles,
+            # and was not startled by the same moth before (to prevent multiple startles for the same hunt)
+            else if (dist < Param.StartleRange & batnumstartled <= Param.LearnTime & batlaststartledby != mothseq)
             {
                 batlaststartled <- t
-                MothStartlesBat(batseq, t)
+                MothStartlesBat(mothseq, batseq, t)
             }
+            #clear laststartledby info so that bat can be startled if met by the same moth again
+            else if (batlaststartledby == mothseq & dist > Param.StartleRange)
+            {
+                batlaststartledby <- 0
+                DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "LastStartledBy"] <<- 0
+            }
+            
             if (batlaststartled == 0 & moth_detected) # bat detects moths, turns towards
             {
                 alpha <- CalcAngle(batx, baty, mothx, mothy)
