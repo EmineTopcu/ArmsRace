@@ -24,12 +24,12 @@ Main <- function()
     
     DF.Stats <<-  data.frame(matrix(ncol = 6, nrow = 0))
     colnames(DF.Stats) <<- c('Mode', 'Variable', 'Seq', 'Victim', 'Prey', 'HuntTime')
-
+    
     InitializeRandomHunt()
     RunModel("RandomHunt", numOfRuns, 0)
     Animate("RandomHunt.html") # plot the last one
     write.csv(DF.Stats, "Output/StatsRandom.csv") #*****************
-
+    
     for (rng in seq(5, 20, 5))
     {
         model <- paste("BatRangeDistance", rng)
@@ -75,14 +75,6 @@ Main <- function()
     }
 
     write.csv(DF.Stats, "Output/Stats.csv")
-    
-    #if (plotResults)
-    #{
-    #    hist(stats[,'Victim'])
-    #    hist(stats[,'Prey'])
-    #    hist(stats[,'HuntTime'])
-    #}
-    #return (stats)
 }
 
 NormalRun <- function()

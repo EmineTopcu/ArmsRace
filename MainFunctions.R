@@ -30,13 +30,19 @@ TimeIncr <- function(t)
     {
         if (DF.Animals$Velocity[i] > 0)
         {
-            ns <- NextStep(DF.Animals$X[i], DF.Animals$Y[i], DF.Animals$Angle[i], DF.Animals$Velocity[i], Param.dt)
+            isMoth <- DF.Animals$Animal[i] == 'Moth'
+            loopAround <- FALSE
+            if (isMoth) # assign a probability to loop around for the moth - to prevent continuous getting stuck when bats are around
+            {
+                #loopAround <- sample(c(0,1), 1) == 0
+            }
+            ns <- NextStep(DF.Animals$X[i], DF.Animals$Y[i], DF.Animals$Angle[i], DF.Animals$Velocity[i], Param.dt, loopAround)
             DF.Animals$X[i] <<- ns[1]
             DF.Animals$Y[i] <<- ns[2]
             DF.Animals$Angle[i] <<- ns[3]
             DF.Trace <<- rbind(DF.Trace, as.data.frame(list(Animal = DF.Animals$Animal[i], ID=DF.Animals$ID[i], Time = t, X = ns[1], Y = ns[2])))
         }
-        else if (DF.Animals$Animal[i] == 'Moth') # Valeocity of eaten moths are set to 0
+        else if (DF.Animals$Animal[i] == 'Moth') # Velocity of eaten moths are set to 0
         {
             ID <- DF.Animals$ID[i]
             masterseq <- DF.LunchTime[DF.LunchTime$MothID == ID, 'BatID']
@@ -114,8 +120,8 @@ TimeIncr <- function(t)
 Simulate <- function()
 {
     InitializeDataFrames()
-    InitializeAnimals(Param.NumOfBats, Param.VelBat, Param.VelBatSD, 'Bat')
-    InitializeAnimals(Param.NumOfMoths, Param.VelMoth, Param.VelMothSD, 'Moth')
+    InitializeAnimals(Param.NumOfBats, Param.VelBat, Param.VelBatSD, 'Bat', 0, Param.Width / 4)
+    InitializeAnimals(Param.NumOfMoths, Param.VelMoth, Param.VelMothSD, 'Moth', Param.Width / 4, Param.Width)
     
     timerange <- (Param.Height**2 + Param.Width**2)^0.5 / Param.VelMoth * 2
     stats <- c('Victim' = 0, 'Prey' = 0, 'HuntTime' = 0)
@@ -125,7 +131,7 @@ Simulate <- function()
     }
     stats["Victim"] <- nrow(DF.LunchTime) / Param.NumOfMoths
     stats["Prey"] <- nrow(DF.LunchTime) / Param.NumOfBats
-    stats["HuntTime"] <- mean(DF.LunchTime$EatenAt) / timerange
+    stats["HuntTime"] <- mean(DF.LunchTime$EatenAt) 
     return (stats)
 }
 

@@ -1,41 +1,55 @@
 
 # Calculates the next position of the animal based on the current position and velocity
 # If the border of the area is reached, it turns back at a random angle
-NextStep <- function(x, y, angle, vel, dt)
+NextStep <- function(x, y, angle, vel, dt, loopAround)
 {
     deltax <- vel * dt *  cos(angle * pi / 180)
     deltay <- vel * dt *  sin(angle * pi / 180)
-    quartile <- replicate(4 , 1)
-    if (x + deltax < 0)
+    if (loopAround)
     {
-        quartile[2] <- 0
-        quartile[3] <- 0
+        if (x + deltax < 0)
+            deltax <- deltax + Param.Width
+        else if (x + deltax > Param.Width)
+            deltax <- deltax - Param.Width
+        if (y + deltay < 0)
+            deltay <- deltay + Param.Height
+        else if (y + deltay > Param.Height)
+            deltay <- deltay - Param.Height
     }
-    else if (x + deltax > Param.Width)
+    else
     {
-        quartile[1] <- 0
-        quartile[4] <- 0
-    }
-    if (y + deltay < 0)
-    {
-        quartile[3] <- 0
-        quartile[4] <- 0
-    }
-    else if (y + deltay > Param.Height)
-    {
-        quartile[1] <- 0
-        quartile[2] <- 0
-    }
-    if (sum(quartile) < 4)
-    {
-        direction <- which(quartile == 1)
-        minangle <- (direction[1] - 1) * 90
-        if (sum(quartile) == 1) maxangle <- minangle + 90
-        else maxangle <- (direction[-1]) * 90
-        if (minangle == 0 & maxangle == 360)
-        { minangle <- -90; maxangle <- 90 }
-        angle<- runif(1, minangle, maxangle) %% 360
-        return (NextStep(x, y, angle, vel, dt))
+        quartile <- replicate(4 , 1)
+        if (x + deltax < 0)
+        {
+            quartile[2] <- 0
+            quartile[3] <- 0
+        }
+        else if (x + deltax > Param.Width)
+        {
+            quartile[1] <- 0
+            quartile[4] <- 0
+        }
+        if (y + deltay < 0)
+        {
+            quartile[3] <- 0
+            quartile[4] <- 0
+        }
+        else if (y + deltay > Param.Height)
+        {
+            quartile[1] <- 0
+            quartile[2] <- 0
+        }
+        if (sum(quartile) < 4)
+        {
+            direction <- which(quartile == 1)
+            minangle <- (direction[1] - 1) * 90
+            if (sum(quartile) == 1) maxangle <- minangle + 90
+            else maxangle <- (direction[-1]) * 90
+            if (minangle == 0 & maxangle == 360)
+            { minangle <- -90; maxangle <- 90 }
+            angle<- runif(1, minangle, maxangle) %% 360
+            return (NextStep(x, y, angle, vel, dt, loopAround = FALSE))
+        }
     }
     x <- x + deltax
     y <- y + deltay

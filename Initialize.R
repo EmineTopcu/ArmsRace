@@ -34,10 +34,10 @@ InitializeDataFrames <- function()
     colnames(DF.Trace) <<- c('Animal', 'ID', 'Time', 'X', 'Y')
 }
 
-InitializeAnimals <- function(num, meanVel, sdVel, bm)
+InitializeAnimals <- function(num, meanVel, sdVel, bm, minX, maxX)
 {
     y <- runif(num, 1, Param.Height)
-    x <- runif(num, 1, Param.Width)
+    x <- runif(num, minX, maxX)
     angle <- runif(num,0, 360)
     vel <- rnorm(num, meanVel, sdVel)
     DF.Animals <<- rbind(DF.Animals, (as.data.frame(list(Animal=rep(bm, num), ID=(1:num), X = x, Y = y, Angle = angle, Velocity = vel, NumStartled = 0, LastStartled = 0, LastStartledBy = 0))))
