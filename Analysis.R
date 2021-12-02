@@ -3,15 +3,14 @@ library(tidyverse)
 
 DF.Analysis <- read.csv("Output/StatsBatRange.csv")
 
-facetLabel <- function(string) {
-    if (gmode == "")
-        return ("")
-    paste(gmode, string)
-}
-
 plotParam <- function(mode, label)
 {
-    gmode <<- label
+    facetLabel <- function(string) {
+        if (label == "")
+            return ("")
+        paste(label, string)
+    }
+    
     DF.Sub <- DF.Analysis %>%
     filter(startsWith(DF.Analysis$Mode, mode)) 
     

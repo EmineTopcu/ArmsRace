@@ -24,6 +24,12 @@ BatRecoversFromStartle <- function(batseq, t)
     DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "LastStartled"] <<- 0
 }
 
+MasterOfMoth <- function(mothseq)
+{
+    masterseq <- DF.LunchTime[DF.LunchTime$MothID == mothseq, 'BatID']
+    return (masterseq[1])
+}
+
 TimeIncr <- function(t)
 {
     for (i in (1:nrow(DF.Animals)))
@@ -31,12 +37,7 @@ TimeIncr <- function(t)
         if (DF.Animals$Velocity[i] > 0)
         {
             isMoth <- DF.Animals$Animal[i] == 'Moth'
-            loopAround <- FALSE
-            if (isMoth) # assign a probability to loop around for the moth - to prevent continuous getting stuck when bats are around
-            {
-                #loopAround <- sample(c(0,1), 1) == 0
-            }
-            ns <- NextStep(DF.Animals$X[i], DF.Animals$Y[i], DF.Animals$Angle[i], DF.Animals$Velocity[i], Param.dt, loopAround)
+            ns <- NextStep(DF.Animals$X[i], DF.Animals$Y[i], DF.Animals$Angle[i], DF.Animals$Velocity[i], Param.dt)
             DF.Animals$X[i] <<- ns[1]
             DF.Animals$Y[i] <<- ns[2]
             DF.Animals$Angle[i] <<- ns[3]
@@ -59,12 +60,12 @@ TimeIncr <- function(t)
     }
     moth_df <- DF.Animals[DF.Animals$Animal == 'Moth', ]
     bat_df <- DF.Animals[DF.Animals$Animal == 'Bat',]
-    for (i in (1:nrow(moth_df)))
+    for (i in sample(1:Param.NumOfMoths, Param.NumOfMoths, replace = FALSE)) # bats are iterated in random to create stochasticity if multiple bats detect a moth
     {
         mothx <-  moth_df$X[i]
         mothy <-  moth_df$Y[i]
         mothseq <- moth_df$ID[i]
-        for (j in (1:nrow(bat_df)))
+        for (j in sample(1:Param.NumOfBats, Param.NumOfBats, replace = FALSE))
         {
             batx <-  bat_df$X[j]
             baty <-  bat_df$Y[j]
@@ -100,17 +101,18 @@ TimeIncr <- function(t)
             
             if (batlaststartled == 0 & moth_detected) # bat detects moths, turns towards
             {
-                alpha <- CalcAngle(batx, baty, mothx, mothy)
+                alpha <- CalcAngle(batx, baty, mothx, mothy, randomize = TRUE)
                 DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "Angle"] <<- alpha
             }
             
             if (dist <= Param.DangerZone) # moth gets eaten
             {
-                BatCatchesMoth (bat_df$ID[j], mothseq, t) 
+                if (is.na(MasterOfMoth(mothseq))) # to prevent to be eaten by two bats
+                    BatCatchesMoth (bat_df$ID[j], mothseq, t) 
             }
             else if (dist < Param.MothRange) # moth detects bat, turns back
             {
-                alpha <- CalcAngle(batx, baty, mothx, mothy)
+                alpha <- CalcAngle(batx, baty, mothx, mothy, randomize = TRUE)
                 DF.Animals[DF.Animals$Animal =='Moth' & DF.Animals$ID == mothseq, "Angle"] <<- alpha
             }
         }  

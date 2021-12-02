@@ -18,7 +18,7 @@ InitializeParameters <- function()
     Param.BatRangeAngle <<- 120
     Param.MothRange <<- 100 # the range that a moth detects the presence of the moth
     Param.StartleRange <<- 20 # the range where the bat hears moth cry and startles
-    Param.RecoveryTime <<-  # how many seconds the bat is startled
+    Param.RecoveryTime <<- 3 # how many seconds the bat is startled
     Param.LearnTime <<- 3 # how many times it takes for the bat to learn to ignore the moth cry and not startle
 }
 
@@ -86,6 +86,16 @@ InitializeStartleRange <- function(rng)
     Param.MothRange <<- 100
     Param.StartleRange <<- rng
     Param.LearnTime <<- 999 # bat continues to startle with each moth cry - no learning
+}
+
+InitializeStartleRecovery <- function(rec)
+{
+    Param.BatRangeDist <<- 15
+    Param.BatRangeAngle <<- 120
+    Param.MothRange <<- 100
+    Param.StartleRange <<- 50
+    Param.StartleRecovery <<- rec
+    Param.LearnTime <<- 3
 }
 
 InitializeStartleLearning <- function(lrn)
