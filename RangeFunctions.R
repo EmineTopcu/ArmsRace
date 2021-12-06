@@ -34,7 +34,7 @@ NextStep <- function(x, y, angle, vel, dt)
         else maxangle <- (direction[-1]) * 90
         if (minangle == 0 & maxangle == 360)
         { minangle <- -90; maxangle <- 90 }
-        angle<- runif(1, minangle, maxangle) %% 360
+        angle <- runif(1, minangle, maxangle) %% 360
         return (NextStep(x, y, angle, vel, dt))
     }
     x <- x + deltax

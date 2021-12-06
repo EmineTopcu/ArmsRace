@@ -34,7 +34,7 @@ TimeIncr <- function(t)
 {
     for (i in (1:nrow(DF.Animals)))
     {
-        if (DF.Animals$Velocity[i] > 0)
+        if (DF.Animals$Velocity[i] > 0.01)
         {
             isMoth <- DF.Animals$Animal[i] == 'Moth'
             ns <- NextStep(DF.Animals$X[i], DF.Animals$Y[i], DF.Animals$Angle[i], DF.Animals$Velocity[i], Param.dt)
@@ -52,8 +52,14 @@ TimeIncr <- function(t)
         }
         else # Bat with velocity = 0 means it is startled
         {
-            DF.Animals$X[i] <<- rnorm(1, DF.Animals$X[i], 0.1)
-            DF.Animals$Y[i] <<- rnorm(1, DF.Animals$Y[i], 0.1)
+            x <- rnorm(1, DF.Animals$X[i], 0.1)
+            if (x < 0) x <- 0.1
+            else if (x > Param.Width) x <- Param.Width - 0.1
+            y <- rnorm(1, DF.Animals$Y[i], 0.1)
+            if (y < 0) y <- 0.1
+            else if (y > Param.Height) y <- Param.Height - 0.1
+            DF.Animals$X[i] <<- x
+            DF.Animals$Y[i] <<- y
             DF.Animals$Angle[i] <<- rnorm(1, DF.Animals$Angle[i], 1)
             DF.Trace <<- rbind(DF.Trace, as.data.frame(list(Animal = DF.Animals$Animal[i], ID=DF.Animals$ID[i], Time = t, X = DF.Animals$X[i], Y = DF.Animals$Y[i])))
         }
