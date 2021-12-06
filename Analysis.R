@@ -2,7 +2,7 @@ library(ggplot2)
 library(tidyverse)
 library(Dict)
 
-SAVETOFILE = TRUE
+SAVETOFILE = FALSE
 DISPLAY = TRUE
 
 AnalysisInitialize <- function()
@@ -95,6 +95,7 @@ plotScatterPlot <- function(mode, label)
         ggplot( aes(x = Seq, y = HuntTime / Prey, color = Variable))  +
         labs(title = mode, x = "") +
         geom_point(alpha=0.6) +
+        scale_fill_gradientn(colours = rainbow(4)) +
         facet_grid(~Variable, labeller = labeller(Variable = facetLabel)) +
         theme(
             legend.position="none",
@@ -103,7 +104,7 @@ plotScatterPlot <- function(mode, label)
     
     pVictim <- DF.Sub %>%
         ggplot( aes(x = Seq, y = Victim, color = Variable)) +
-            labs(title = mode, x = "") +
+            labs(title = mode, x = "", y = "Victim %") +
             geom_point(alpha=0.6) +
             facet_grid(~Variable, labeller = labeller(Variable = facetLabel)) +
         theme(
@@ -188,10 +189,10 @@ calcANOVA <- function(mode)
     if (length(unique(DF.Sub$Variable)) > 1)
     {
         anovaResults <- aov(HuntTime/Prey ~ Variable, data = DF.Sub)
-        print(mode)
+        print(paste(mode, 'HuntTime/Prey'))
         print(summary(anovaResults))
-        p_value <- summary(anovaResults)[[1]][["Pr(>F)"]][[1]]
-        if (p_value <= 0.1)
+        p_value1 <- summary(anovaResults)[[1]][["Pr(>F)"]][[1]]
+        if (p_value1 <= 0.1)
         {
             TukeyResults <- TukeyHSD(anovaResults)
             if (DISPLAY)
@@ -201,21 +202,46 @@ calcANOVA <- function(mode)
             }
             if (SAVETOFILE)
             {
-                png(str_replace_all(paste("Graphs/", mode, "Tukey.png"), " ", ""))
+                png(str_replace_all(paste("Graphs/", mode, "HuntTimeTukey.png"), " ", ""))
                 plot(TukeyResults, las = 1)
                 dev.off()
             }
         }
-        return (p_value)
+        
+        anovaResults <- aov(Victim ~ Variable, data = DF.Sub)
+        print(paste(mode, 'Victim %'))
+        print(summary(anovaResults))
+        p_value2 <- summary(anovaResults)[[1]][["Pr(>F)"]][[1]]
+        if (p_value2 <= 0.1)
+        {
+            TukeyResults <- TukeyHSD(anovaResults)
+            if (DISPLAY)
+            {
+                pairwisePlot <- plot(TukeyResults, las = 1)
+                print(pairwisePlot)
+            }
+            if (SAVETOFILE)
+            {
+                png(str_replace_all(paste("Graphs/", mode, "VictimTukey.png"), " ", ""))
+                plot(TukeyResults, las = 1)
+                dev.off()
+            }
+        }
+        return (c(p_value1, p_value2))
     }
-    return (999)
+    return (c(999, 999))
 }
 
 calcANOVAs <- function()
 {
     modes = unique(DF.Analysis$Mode)
     for (mode in modes)
-        print(paste(mode, calcANOVA(mode)))
+    {
+        p_values <- calcANOVA(mode)
+        print(mode)
+        print(paste('HuntTime/Prey:', p_values[1]))
+        print(paste('Victim %:', p_values[2]))
+    }
     
     anovaResults <- aov(HuntTime/Prey ~ GroupedMode, data = DF.Analysis)
     print(mode)

@@ -63,7 +63,7 @@ Main <- function()
     }
     
     model <- "StartleRecovery"
-    for (rec in seq(1, 4, 1))
+    for (rec in (4:1))
     {
         InitializeStartleRecovery(rec)
         RunModel(model, numOfRuns, rec)
@@ -71,7 +71,7 @@ Main <- function()
     }
 
     model <- "StartleLearning"
-    for (lrn in (2:5))
+    for (lrn in (5:2))
     {
         InitializeStartleLearning(lrn)
         RunModel(model, numOfRuns, lrn)
