@@ -63,7 +63,7 @@ Main <- function()
         model <- paste("StartleRange", rng)
         InitializeStartleRange(rng)
         RunModel(model, numOfRuns, rng)
-        Animate(paste(model, i, ".html")) # plot the last one
+        Animate(paste(model, ".html")) # plot the last one
     }
     #write.csv(DF.Stats, str_remove_all(paste("Output/StatsStartle",i,".csv"), " "))
 
@@ -72,7 +72,7 @@ Main <- function()
         model <- paste("StartleRecovery", rec)
         InitializeStartleRecovery(rec)
         RunModel(model, numOfRuns, rec)
-        Animate(paste(model, i, ".html")) # plot the last one
+        Animate(paste(model, ".html")) # plot the last one
     }
     #write.csv(DF.Stats, str_remove_all(paste("Output/StatsStartleRecovery",i,".csv"), " "))
     
@@ -81,7 +81,7 @@ Main <- function()
         model <- paste("StartleLearning", lrn)
         InitializeStartleLearning(lrn)
         RunModel(model, numOfRuns, lrn)
-        Animate(paste(model, i, ".html")) # plot the last one
+        Animate(paste(model, ".html")) # plot the last one
     }
     #write.csv(DF.Stats, str_remove_all(paste("Output/StartleLearn",i,".csv"), " "))#*****************
     write.csv(DF.Stats, "Output/Stats.csv")
