@@ -11,7 +11,7 @@ RunModel <- function (mode, numOfRuns, variable)
 {
     for (i in (1:numOfRuns))
     {
-        print(paste(mode, i))
+        print(paste(mode, variable, i))
         stats <- Simulate()
         DF.Stats <<- rbind(DF.Stats, (as.data.frame(list(Mode = mode, Variable = variable, Seq = i, Victim = stats["Victim"], Prey = stats["Prey"], HuntTime = stats["HuntTime"]))))
     }
@@ -29,61 +29,54 @@ Main <- function()
     InitializeRandomHunt()
     RunModel("RandomHunt", numOfRuns, 0)
     Animate("RandomHunt.html") # plot the last one
-    #write.csv(DF.Stats, "Output/StatsRandom.csv")
-
+    
+    model <- "BatRangeDistance"
     for (rng in seq(5, 20, 5))
     {
-        model <- paste("BatRangeDistance", rng)
         InitializeBatDetectRange(rng)
         RunModel(model, numOfRuns, rng)
-        Animate(paste(model, ".html")) # plot the last one
+        Animate(paste(model, rng, ".html")) # plot the last one
     }
-    #write.csv(DF.Stats, "Output/StatsBatRange.csv")
 
+    model <- "BatRangeAngle"
     for (ang in seq(90, 150, 20))
     {
-        model <- paste("BatRangeAngle", ang)
         InitializeBatDetectAngle(ang)
         RunModel(model, numOfRuns, ang)
-        Animate(paste(model, ".html")) # plot the last one
+        Animate(paste(model, ang, ".html")) # plot the last one
     }
-    #write.csv(DF.Stats, "Output/StatsBatAngle.csv")
 
+    model <- "MothRangeDistance"
     for (rng in seq(60, 120, 20))
     {
-        model <- paste("MothRangeDistance", rng)
         InitializeMothDetectRange(rng)
         RunModel(model, numOfRuns, rng)
-        Animate(paste(model, ".html")) # plot the last one
+        Animate(paste(model, rng, ".html")) # plot the last one
     }
-    #write.csv(DF.Stats, "Output/StatsMothRange.csv")
-
-    for (rng in seq(10, 40, 10)) 
+    
+    model <- "StartleRange"
+    for (rng in seq(10, 40, 10))
     {
-        model <- paste("StartleRange", rng)
         InitializeStartleRange(rng)
         RunModel(model, numOfRuns, rng)
-        Animate(paste(model, i, ".html")) # plot the last one
+        Animate(paste(model, rng, ".html")) # plot the last one
     }
-    #write.csv(DF.Stats, str_remove_all(paste("Output/StatsStartle",i,".csv"), " "))
 
-    for (rec in seq(1, 4, 1)) 
+    model <- "StartleRecovery"
+    for (rec in seq(1, 4, 1))
     {
-        model <- paste("StartleRecovery", rec)
         InitializeStartleRecovery(rec)
         RunModel(model, numOfRuns, rec)
-        Animate(paste(model, i, ".html")) # plot the last one
+        Animate(paste(model, rec, ".html")) # plot the last one
     }
-    #write.csv(DF.Stats, str_remove_all(paste("Output/StatsStartleRecovery",i,".csv"), " "))
-    
+
+    model <- "StartleLearning"
     for (lrn in (2:5))
     {
-        model <- paste("StartleLearning", lrn)
         InitializeStartleLearning(lrn)
         RunModel(model, numOfRuns, lrn)
-        Animate(paste(model, i, ".html")) # plot the last one
+        Animate(paste(model, lrn, ".html")) # plot the last one
     }
-    #write.csv(DF.Stats, str_remove_all(paste("Output/StartleLearn",i,".csv"), " "))#*****************
     write.csv(DF.Stats, "Output/Stats.csv")
 }
 
