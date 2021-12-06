@@ -15,7 +15,7 @@ AnalysisInitialize <- function()
                           StartleRecovery = "Recovery time: ",
                           StartleLearning = "Learning: ")
 
-    DF.Analysis <<- read.csv("Output/StatsFull.csv")
+    DF.Analysis <<- read.csv("Output/Stats.csv")
     DF.Analysis <<- cbind(DF.Analysis, DF.Analysis$Mode)
     names(DF.Analysis)[names(DF.Analysis) == 'DF.Analysis$Mode'] <- 'GroupedMode'
     DF.Analysis$GroupedMode[DF.Analysis$Mode == 'BatRangeDistance'] <- 'BatRange'
@@ -25,11 +25,10 @@ AnalysisInitialize <- function()
     
     DF.Analysis <<- transform(DF.Analysis, Mode = factor(Mode, levels = unique(Mode)))
     DF.Analysis <<- transform(DF.Analysis, GroupedMode = factor(GroupedMode, levels = unique(GroupedMode)))
-    DF.Analysis <<- transform(DF.Analysis, Variable = factor(Variable, levels = unique(Variable)))
 }
 
 
-plotHistogram <- function(mode, label, saveToFile = TRUE, display = TRUE)
+plotHistogram <- function(mode, label)
 {
     facetLabel <- function(string) {
         if (label == "")
@@ -43,7 +42,6 @@ plotHistogram <- function(mode, label, saveToFile = TRUE, display = TRUE)
         ggplot( aes(x = Victim, color = Variable, fill = Variable)) +
         geom_histogram(alpha = 0.6, bins = 30) +
         scale_fill_gradientn(colours = rainbow(4)) +
-        #scale_fill_distiller(palette = "Dark2") +
         theme(
             legend.position = "none",
             strip.text.x = element_text(size = 12)
@@ -60,30 +58,30 @@ plotHistogram <- function(mode, label, saveToFile = TRUE, display = TRUE)
             legend.position="none",
             strip.text.x = element_text(size = 12)
             ) +
-        labs(title = mode, x = "", y = "HuntTime") +
+        labs(title = mode, x = "", y = "HuntTime/Prey") +
         facet_wrap(~Variable, labeller = labeller( Variable = facetLabel))
 
-    if (saveToFile)
+    if (SAVETOFILE)
     {
-        ggsave(filename = paste("Graphs/", mode, "Victim.jpg"), plot = pVictim)
-        ggsave(filename = paste("Graphs/", mode, "Hunt.jpg"), plot = pHunt)
+        ggsave(filename = str_replace_all(paste("Graphs/", mode, "Victim.png"), " ", ""), plot = pVictim)
+        ggsave(filename = str_replace_all(paste("Graphs/", mode, "Hunt.png"), " ", ""), plot = pHunt)
     }
-    if (display)
+    if (DISPLAY)
     {    
         print(pVictim)
         print(pHunt)
     }
 }
 
-plotHistograms <- function(saveToFile = TRUE, display = TRUE)
+plotHistograms <- function()
 {
     modes = unique(DF.Analysis$Mode)
     for (mode in modes)
-        plotHistogram(mode, labelDict[mode], saveToFile, display)
+        plotHistogram(mode, labelDict[mode])
 }
 
 # TODO: colors
-plotScatterPlot <- function(mode, label, saveToFile = TRUE, display = TRUE)
+plotScatterPlot <- function(mode, label)
 {
     facetLabel <- function(string) {
         if (label == "")
@@ -113,12 +111,12 @@ plotScatterPlot <- function(mode, label, saveToFile = TRUE, display = TRUE)
             strip.text.x = element_text(size = 12)
         ) 
     
-    if (saveToFile)
+    if (SAVETOFILE)
     {
-        ggsave(filename = paste("Graphs/", mode, "SPHunt.jpg"), plot = pHunt)
-        ggsave(filename = paste("Graphs/", mode, "SPVictim.jpg"), plot = pVictim)
+        ggsave(filename= str_replace_all(paste("Graphs/", mode, "SPHunt.png"), " ", ""), plot = pHunt)
+        ggsave(filename = str_replace_all(paste("Graphs/", mode, "SPVictim.png"), " ", ""), plot = pVictim)
     }
-    if (display)
+    if (DISPLAY)
     {    
         print(pVictim)
         print(pHunt)
@@ -126,14 +124,14 @@ plotScatterPlot <- function(mode, label, saveToFile = TRUE, display = TRUE)
     
 }
 
-plotScatterplots <- function(saveToFile = TRUE, display = TRUE)
+plotScatterplots <- function()
 {
     modes = unique(DF.Analysis$Mode)
     for (mode in modes)
-        plotScatterPlot(mode, labelDict[mode], saveToFile, display)
+        plotScatterPlot(mode, labelDict[mode])
 }
 
-plotFlows <- function(saveToFile = TRUE, display = TRUE)
+plotFlows <- function()
 {
     pHunt <- DF.Analysis %>% 
         ggplot( aes(x = Run, y = HuntTime/Prey, color = GroupedMode)) +
@@ -145,19 +143,19 @@ plotFlows <- function(saveToFile = TRUE, display = TRUE)
         scale_fill_gradientn(colours = rainbow(4)) +
         geom_point(alpha = 0.6)
 
-    if (saveToFile)
+    if (SAVETOFILE)
     {
-        ggsave(filename = paste("Graphs/FlowHunt.jpg"), plot = pHunt)
-        ggsave(filename = paste("Graphs/FlowVictim.jpg"), plot = pVictim)
+        ggsave(filename = str_replace_all(paste("Graphs/FlowHunt.png"), " ", ""), plot = pHunt)
+        ggsave(filename = str_replace_all(paste("Graphs/FlowVictim.png"), " ", ""), plot = pVictim)
     }
-    if (display)
+    if (DISPLAY)
     {    
         print(pVictim)
         print(pHunt)
     }    
 }
 
-plotViolins <- function(saveToFile = TRUE, display = TRUE)
+plotViolins <- function()
 {
     pHunt <- DF.Analysis %>% 
         ggplot( aes(x = GroupedMode, y = HuntTime/Prey, color = GroupedMode, fill = GroupedMode)) +
@@ -169,12 +167,12 @@ plotViolins <- function(saveToFile = TRUE, display = TRUE)
         geom_violin(alpha = 0.6) +
         stat_sum()
     
-    if (saveToFile)
+    if (SAVETOFILE)
     {
-        ggsave(filename = paste("Graphs/ViolinHunt.jpg"), plot = pHunt)
-        ggsave(filename = paste("Graphs/ViolinVictim.jpg"), plot = pVictim)
+        ggsave(filename = str_replace_all(paste("Graphs/ViolinHunt.png"), " ", ""), plot = pHunt)
+        ggsave(filename = str_replace_all(paste("Graphs/ViolinVictim.png"), " ", ""), plot = pVictim)
     }
-    if (display)
+    if (DISPLAY)
     {    
         print(pVictim)
         print(pHunt)
@@ -185,6 +183,8 @@ plotViolins <- function(saveToFile = TRUE, display = TRUE)
 calcANOVA <- function(mode)
 {
     DF.Sub <- DF.Analysis %>% filter(Mode == mode)
+    DF.Sub <- transform(DF.Sub, Variable = factor(Variable, levels = unique(Variable)))
+    
     if (length(unique(DF.Sub$Variable)) > 1)
     {
         anovaResults <- aov(HuntTime/Prey ~ Variable, data = DF.Sub)
@@ -201,7 +201,7 @@ calcANOVA <- function(mode)
             }
             if (SAVETOFILE)
             {
-                png(paste("Graphs/", mode, "Tukey.png"))
+                png(str_replace_all(paste("Graphs/", mode, "Tukey.png"), " ", ""))
                 plot(TukeyResults, las = 1)
                 dev.off()
             }
@@ -226,10 +226,10 @@ calcANOVAs <- function()
 RunAnalysis <- function()
 {
     AnalysisInitialize()
-    plotHistograms(saveToFile = SAVETOFILE, display = DISPLAY)
-    plotScatterplots(saveToFile = SAVETOFILE, display = DISPLAY)
-    plotFlows(saveToFile = SAVETOFILE, display = DISPLAY)
-    plotViolins(saveToFile = SAVETOFILE, display = DISPLAY)
+    plotHistograms()
+    plotScatterplots()
+    plotFlows()
+    plotViolins()
     calcANOVAs()
 }
 
