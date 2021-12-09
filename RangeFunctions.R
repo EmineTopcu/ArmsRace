@@ -1,3 +1,6 @@
+## RangeFunctions.R
+
+# The functions necessary to calculate distance, detect range, and angle
 
 # Calculates the next position of the animal based on the current position and velocity
 # If the border of the area is reached, it turns back at a random angle
@@ -6,27 +9,27 @@ NextStep <- function(x, y, angle, vel, dt)
     deltax <- vel * dt *  cos(angle * pi / 180)
     deltay <- vel * dt *  sin(angle * pi / 180)
     quartile <- replicate(4 , 1)
-    if (x + deltax < 0)
+    if (x + deltax < 0) # left side of the area, need to go right
     {
         quartile[2] <- 0
         quartile[3] <- 0
     }
-    else if (x + deltax > Param.Width)
+    else if (x + deltax > Param.Width) # right side of the area, needs to go left
     {
         quartile[1] <- 0
         quartile[4] <- 0
     }
-    if (y + deltay < 0)
+    if (y + deltay < 0) # bottom of the area, needs to go up
     {
         quartile[3] <- 0
         quartile[4] <- 0
     }
-    else if (y + deltay > Param.Height)
+    else if (y + deltay > Param.Height) # top of the area, needs to go down
     {
         quartile[1] <- 0
         quartile[2] <- 0
     }
-    if (sum(quartile) < 4)
+    if (sum(quartile) < 4) # out of the area, needs to turn
     {
         direction <- which(quartile == 1)
         minangle <- (direction[1] - 1) * 90

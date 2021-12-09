@@ -1,14 +1,21 @@
+## MainFunctions.R
+## The main functions of the simulation
 
-
+# When bat catches moth:
+# the predation information is logged in DF.Predation dataframe
+# the velocity and the position of moth is cleared
 BatCatchesMoth <- function(batseq, mothseq, t)
 {
-    DF.LunchTime <<-  rbind(DF.LunchTime, (as.data.frame(list(MothID=mothseq, BatID=batseq, EatenAt = t))))
+    DF.Predation <<-  rbind(DF.Predation, (as.data.frame(list(MothID=mothseq, BatID=batseq, EatenAt = t))))
     
     DF.Animals[DF.Animals$Animal == 'Moth' & DF.Animals$ID == mothseq, "X"] <<- - Param.Width
     DF.Animals[DF.Animals$Animal == 'Moth' & DF.Animals$ID == mothseq, "Y"] <<- - Param.Height
     DF.Animals[DF.Animals$Animal == 'Moth' & DF.Animals$ID == mothseq, "Velocity"] <<- 0
 }
 
+# When moth startles bat:
+# the starling information is logged to be used by recovery and learning behaviors
+# the velocity of the bat is zeroed out
 MothStartlesBat <- function(mothseq, batseq, t)
 {
     DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "Velocity"] <<- 0
@@ -18,18 +25,26 @@ MothStartlesBat <- function(mothseq, batseq, t)
     DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "NumStartled"] <<- numstartled + 1
 }
 
+# When bat recovers from startling:
+# the bat continue to fly at its original direction
 BatRecoversFromStartle <- function(batseq, t)
 {
     DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "Velocity"] <<- rnorm(1, Param.VelBat, Param.VelBatSD)
     DF.Animals[DF.Animals$Animal =='Bat' & DF.Animals$ID == batseq, "LastStartled"] <<- 0
 }
 
+# checks whether a moth is already hunted by a bat
+# to prevent multiple bats hunting the same moth
 MasterOfMoth <- function(mothseq)
 {
-    masterseq <- DF.LunchTime[DF.LunchTime$MothID == mothseq, 'BatID']
+    masterseq <- DF.Predation[DF.Predation$MothID == mothseq, 'BatID']
     return (masterseq[1])
 }
 
+# the main function simulating each time increment
+# the position, velocity, and fate of each animal is calculated based on 
+# its previous location, its proximity to the borders of the area
+# and its proximity to a predator or a prey
 TimeIncr <- function(t)
 {
     for (i in (1:nrow(DF.Animals)))
@@ -46,7 +61,7 @@ TimeIncr <- function(t)
         else if (DF.Animals$Animal[i] == 'Moth') # Velocity of eaten moths are set to 0
         {
             ID <- DF.Animals$ID[i]
-            masterseq <- DF.LunchTime[DF.LunchTime$MothID == ID, 'BatID']
+            masterseq <- DF.Predation[DF.Predation$MothID == ID, 'BatID']
             masterpos <- DF.Animals[DF.Animals$Animal == 'Bat' & DF.Animals$ID == masterseq,]
             DF.Trace <<- rbind(DF.Trace, as.data.frame(list(Animal = DF.Animals$Animal[i], ID = DF.Animals$ID[i], Time = t, X = masterpos$X, Y = masterpos$Y))) 
         }
@@ -66,7 +81,9 @@ TimeIncr <- function(t)
     }
     moth_df <- DF.Animals[DF.Animals$Animal == 'Moth', ]
     bat_df <- DF.Animals[DF.Animals$Animal == 'Bat',]
-    for (i in sample(1:Param.NumOfMoths, Param.NumOfMoths, replace = FALSE)) # bats are iterated in random to create stochasticity if multiple bats detect a moth
+    # bats are iterated in random to create stochasticity 
+    # to prevent bias to certain bats if multiple bats detect a moth
+    for (i in sample(1:Param.NumOfMoths, Param.NumOfMoths, replace = FALSE)) 
     {
         mothx <-  moth_df$X[i]
         mothy <-  moth_df$Y[i]
@@ -125,25 +142,26 @@ TimeIncr <- function(t)
     }
 }
 
+# Run a simulation using the global modelling parameters
+# by discrete increments of time
 Simulate <- function()
 {
     InitializeDataFrames()
     InitializeAnimals(Param.NumOfBats, Param.VelBat, Param.VelBatSD, 'Bat', 0, Param.Width / 4)
     InitializeAnimals(Param.NumOfMoths, Param.VelMoth, Param.VelMothSD, 'Moth', Param.Width / 4, Param.Width)
     
-    timerange <- (Param.Height**2 + Param.Width**2)^0.5 / Param.VelMoth * 2
     stats <- c('Victim' = 0, 'Prey' = 0, 'HuntTime' = 0)
-    for (i in seq(1, timerange, Param.dt))
+    for (i in seq(1, Param.TimeRange, Param.dt))
     {
         TimeIncr(i)
     }
-    stats["Victim"] <- nrow(DF.LunchTime) / Param.NumOfMoths
-    stats["Prey"] <- nrow(DF.LunchTime) / Param.NumOfBats
-    stats["HuntTime"] <- mean(DF.LunchTime$EatenAt) 
+    stats["Victim"] <- nrow(DF.Predation) / Param.NumOfMoths
+    stats["Prey"] <- nrow(DF.Predation) / Param.NumOfBats
+    stats["HuntTime"] <- mean(DF.Predation$EatenAt) 
     return (stats)
 }
 
-
+# Create the animation file using the plotly package
 Animate <- function(fileName = NULL)
 {
     fileName <- gsub(" ", "", paste('Output/',fileName))
@@ -154,8 +172,7 @@ Animate <- function(fileName = NULL)
         scale_shape_manual(values=c(11, 5)) +
         scale_color_manual(values=c("black", "navajowhite4"))
     
-    pp <- ggplotly(p) %>% animation_opts(frame = 250, easing = "linear", redraw = FALSE)
-    pp
-    if (! is.null(fileName))
-        saveWidget(pp, file = fileName, selfcontained = TRUE)
+    anim <- ggplotly(p) %>% animation_opts(frame = 50, easing = "linear", redraw = FALSE)
+    if (! is.null(fileName)) # save the animation as an html file
+        saveWidget(anim, file = fileName, selfcontained = TRUE)
 }
