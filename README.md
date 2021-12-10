@@ -1,3 +1,4 @@
 # ArmsRace
-Bats versus moths
-A simulation of the evolutionary arms race between bats and moths
+Bats versus moths 
+
+A simplified simulation of the evolutionary arms race between bats and moths in R
